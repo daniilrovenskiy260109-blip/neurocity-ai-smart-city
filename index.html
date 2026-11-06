@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuroCity — AI-Powered Smart City</title>
+  <meta name="description" content="Интерактивный 3D умный город на основе искусственного интеллекта. Факультет AI in Business & Technology." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="scene"></div>
+  <div id="labels"></div>
+  <div id="tooltip" class="hidden"></div>
+
+  <div id="loader">
+    <div class="loader-logo">🧠</div>
+    <div class="loader-title">NeuroCity</div>
+    <div class="loader-sub">Загрузка умного города…</div>
+    <div class="loader-bar"><span></span></div>
+  </div>
+
+  <!-- Верхняя панель KPI -->
+  <header id="kpibar">
+    <div class="kpi"><span class="kpi-i">🕒</span><div><b id="k-time">09:00</b><small id="k-daypart">Утро</small></div></div>
+    <div class="kpi"><span class="kpi-i">⚡</span><div><b id="k-energy">—</b><small>Выработка / спрос, МВт</small></div></div>
+    <div class="kpi"><span class="kpi-i">🔋</span><div><b id="k-battery">—</b><small>Заряд хранилища</small></div></div>
+    <div class="kpi"><span class="kpi-i">🚦</span><div><b id="k-wait">—</b><small id="k-wait-l">Ожидание на светофоре</small></div></div>
+    <div class="kpi"><span class="kpi-i">🧠</span><div><b id="k-ai">—</b><small>Решений ИИ в секунду</small></div></div>
+    <div class="kpi"><span class="kpi-i">💰</span><div><b id="k-rev">—</b><small>Выручка бизнеса сегодня</small></div></div>
+    <div class="kpi"><span class="kpi-i">🌿</span><div><b id="k-co2">—</b><small>CO₂ сэкономлено сегодня</small></div></div>
+  </header>
+
+  <!-- Левая панель -->
+  <button id="menuBtn" class="icon-btn" title="Меню">☰</button>
+  <aside id="sidebar" class="panel">
+    <div class="brand">
+      <div class="brand-logo">🧠</div>
+      <div>
+        <h1>NeuroCity</h1>
+        <p>AI-Powered Smart City</p>
+      </div>
+    </div>
+    <div class="faculty">🎓 Факультет: <b>AI in Business & Technology</b><span id="author"></span></div>
+
+    <section>
+      <h3>Время и окружение</h3>
+      <div class="row">
+        <button id="playBtn" class="btn small" title="Пауза / запуск времени">⏸</button>
+        <input id="timeSlider" type="range" min="0" max="24" step="0.05" value="9" />
+        <span id="timeLbl" class="mono">09:00</span>
+      </div>
+      <div class="row gap">
+        <button class="btn small seg" data-t="8">🌅 Утро</button>
+        <button class="btn small seg" data-t="13">☀️ День</button>
+        <button class="btn small seg" data-t="19.5">🌆 Вечер</button>
+        <button class="btn small seg" data-t="23">🌙 Ночь</button>
+      </div>
+      <div class="row">
+        <label class="lbl">Скорость времени</label>
+        <select id="speedSel">
+          <option value="1">×1 (1 мин/с)</option>
+          <option value="3" selected>×3</option>
+          <option value="10">×10</option>
+          <option value="30">×30</option>
+        </select>
+      </div>
+    </section>
+
+    <section>
+      <h3>Системы ИИ</h3>
+      <label class="switch"><input type="checkbox" id="tAiTraffic" checked /><span></span>AI-светофоры (адаптивные)</label>
+      <label class="switch"><input type="checkbox" id="tAiEnergy" checked /><span></span>AI-управление энергосетью</label>
+      <label class="switch"><input type="checkbox" id="tNetwork" checked /><span></span>Показать AI-сеть данных</label>
+      <label class="switch"><input type="checkbox" id="tLabels" checked /><span></span>Подписи объектов</label>
+      <label class="switch"><input type="checkbox" id="tRotate" /><span></span>Авто-вращение 360°</label>
+      <div class="row">
+        <label class="lbl">Машин на дорогах: <b id="carsLbl">60</b></label>
+      </div>
+      <input id="carsSlider" type="range" min="10" max="110" step="5" value="60" />
+    </section>
+
+    <section class="grow">
+      <h3>Объекты города</h3>
+      <input id="search" type="search" placeholder="🔍 Поиск объекта…" />
+      <ul id="objList"></ul>
+    </section>
+
+    <div class="help">
+      🖱 <b>ЛКМ</b> — вращать 360° · <b>Колесо</b> — зум · <b>ПКМ</b> — сдвиг<br />
+      👆 Клик по зданию, машине, дрону или светофору — информация<br />
+      ⌨️ <b>Q/E</b> — поворот · <b>+/−</b> — зум · <b>R</b> — сброс вида
+    </div>
+  </aside>
+
+  <!-- Панель информации -->
+  <aside id="info" class="panel hidden">
+    <button id="infoClose" class="icon-btn close" title="Закрыть">✕</button>
+    <div class="info-head">
+      <div id="iIcon" class="info-icon">🏢</div>
+      <div>
+        <div id="iCat" class="info-cat"></div>
+        <h2 id="iName"></h2>
+      </div>
+    </div>
+    <p id="iDesc" class="info-desc"></p>
+    <div id="iTech" class="chips"></div>
+    <div id="iStats" class="stats"></div>
+    <div class="chart-card">
+      <div class="chart-title"><span id="iMetricLbl"></span><b id="iMetricVal"></b></div>
+      <canvas id="iChart"></canvas>
+    </div>
+    <div class="insight"><div class="insight-h">🤖 AI-инсайт</div><div id="iInsight"></div></div>
+    <div class="value"><div class="insight-h">💼 Бизнес-ценность</div><div id="iValue"></div></div>
+    <div id="iActions" class="actions"></div>
+    <div id="iResult" class="result hidden"></div>
+  </aside>
+
+  <!-- Нижняя панель аналитики -->
+  <section id="dash" class="panel">
+    <button id="dashToggle" class="dash-toggle" title="Свернуть / развернуть">📈 Аналитика города <span>▾</span></button>
+    <div class="dash-body">
+      <div class="dcard">
+        <div class="dtitle">⚡ Энергосистема, МВт <span class="legend"><i style="background:#facc15"></i>Солнце <i style="background:#22d3ee"></i>Ветер <i style="background:#f87171"></i>Спрос</span></div>
+        <canvas id="cEnergy"></canvas>
+      </div>
+      <div class="dcard">
+        <div class="dtitle">🚦 Ср. ожидание на перекрёстке, с</div>
+        <canvas id="cTraffic"></canvas>
+      </div>
+      <div class="dcard">
+        <div class="dtitle">💰 Выручка по секторам, $/час</div>
+        <canvas id="cRevenue"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Кнопки камеры -->
+  <div id="camCtl">
+    <button class="icon-btn" id="zIn" title="Приблизить">＋</button>
+    <button class="icon-btn" id="zOut" title="Отдалить">−</button>
+    <button class="icon-btn" id="rL" title="Повернуть влево">⟲</button>
+    <button class="icon-btn" id="rR" title="Повернуть вправо">⟳</button>
+    <button class="icon-btn" id="vTop" title="Вид сверху">⬒</button>
+    <button class="icon-btn" id="vReset" title="Сбросить вид">⌂</button>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
